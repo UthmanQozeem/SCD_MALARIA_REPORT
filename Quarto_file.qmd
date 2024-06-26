@@ -1,5 +1,5 @@
 ---
-title: "SCD_Q2_ANALYSIS_REPORT & MALARIA_PREVELANCE_NIGERIA"
+title: "SCD_ANALYSIS_REPORT & MALARIA_PREVELANCE_NIGERIA"
 author: "*By Qozeem Uthman*"
 format: 
   dashboard
@@ -24,26 +24,30 @@ nigeria<-st_read(here("ngaadmbndaadm1osgof20161215.geojson"), quiet = TRUE)
 ```{r}
 import_data<-readxl::read_xlsx(here("Data/Awareness of Emerging and Novel Treatment Options for Sickle Cell Disease in Nigeria (Responses).xlsx"))
 
-import_data<-import_data %>%
+# Clean up column names by removing leading/trailing whitespace
+colnames(import_data) <- trimws(colnames(import_data))
+
+# Rename columns explicitly
+import_data <- import_data %>%
   rename(
-         `Age range`=`What is your age range`,
-         `Gender`=`What is your gender`,
+    `Age range` = `What is your age range`,
+    Gender = `What is your gender`,
     `Relationship with SCD` = `What is your relationship with SCD?`,
-    `Genotype` = `What is the genotype of you or your relative?`,
-    `Heard of new treatments` = `Have you heard of any emerging or new treatment options for Sickle cell disease?
-`,
+    Genotype = `What is the genotype of you or your relative?`,
     `Stay up-to-date` = `How do you stay up-to-date with the latest advances in sickle cell disease and treatments? Please tick all that applies`,
     `Excited about new treatments` = `Are you excited by the recent new treatments for SCD treatment?`,
+    `Heard of new treatments` = `Have you heard of any emerging or new treatment options for Sickle cell disease?`,
     `Barriers to accessing treatments` = `Which of the following are the barriers to accessing new treatments for sickle cell in Nigeria?`,
     `Confidence in knowledge` = `On a scale of 1 to 5, how confident are you in your knowledge about emerging treatments for Sickle cell disease?`,
     `Focus of future research` = `What aspect of sickle cell do you think future research should focus on? (Please tick all that applies)`,
     `Concerns about new treatments` = `What are your main concerns around new  SCD treatments?`,
     `Accessibility of treatments` = `Do you believe that new treatments for SCD are accessible for Nigerian patients?`,
-     `Consent_form`=`Please confirm that you consent to participate in this survey by selecting “Yes” below`,
-     `Familiarity with ffg treatment?`= `Which of the following new sickle cell treatment options are you familiar with? Please tick all that applies.`,
-     `Willingness to receive update?`= `Do you want to be informed of new breakthroughs in SCD treatments even though they are not available in Nigeria?`,
-`Why would you use new treatment`= `What factors would inform your decision to use any of the new treatments?`
+    `Consent_form` = `Please confirm that you consent to participate in this survey by selecting “Yes” below`,
+    `Familiarity with ffg treatment?` = `Which of the following new sickle cell treatment options are you familiar with? Please tick all that applies.`,
+    `Willingness to receive update?` = `Do you want to be informed of new breakthroughs in SCD treatments even though they are not available in Nigeria?`,
+    `Why would you use new treatment` = `What factors would inform your decision to use any of the new treatments?`
   )
+
 
 import_data_2 <- import_data %>% select(Gender,`Relationship with SCD`,Genotype,`Heard of new treatments`,`Accessibility of treatments`,`Stay up-to-date`) %>% head(10)
 ```
@@ -361,7 +365,7 @@ htmltools::browsable(
 
 # ABOUT 
 
-This data comes from '*a survey conducted to check the awareness and novel treatment of SCD*' 
+This data comes from '*a survey conducted to check the awareness and readiness to accept treatment of SCD*' 
 
 Nigeria leads the world in the number of SCD cases. Approximately 150,000 babies are born annually with SCD in Nigeria. Sadly, 70-90% of affected infants die before reaching age 5. Nigerian SCD patients face staggering healthcare costs, with monthly expenses ranging from N70,000 to N1,000,0003. Up to 650 children die per day in sub-Saharan Africa from SCD1.*{Arwa et al., 2019}*
 
