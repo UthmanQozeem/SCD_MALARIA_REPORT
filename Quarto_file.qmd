@@ -1,0 +1,371 @@
+---
+title: "SCD_Q2_ANALYSIS_REPORT & MALARIA_PREVELANCE_NIGERIA"
+author: "*By Qozeem Uthman*"
+format: 
+  dashboard
+theme:  sandstone
+---
+
+```{r read_nigeria_data, message=FALSE, warning=FALSE, echo=FALSE}
+#Load packages
+if(!require(pacman)) install.packages("pacman")
+pacman::p_load(here, tidyverse,
+               ggplot2, plotly, reactable,
+               bslib, shiny, gapminder,
+               bsicons, reactable, htmltools,
+               highcharter, flexdashboard,
+               rnaturalearth, plotly, countrycode,
+               ggtext, sf, flextable)
+
+#The second row calculation
+nigeria<-st_read(here("ngaadmbndaadm1osgof20161215.geojson"), quiet = TRUE)
+```
+
+```{r}
+import_data<-readxl::read_xlsx(here("Data/Awareness of Emerging and Novel Treatment Options for Sickle Cell Disease in Nigeria (Responses).xlsx"))
+
+import_data<-import_data %>%
+  rename(
+         `Age range`=`What is your age range`,
+         `Gender`=`What is your gender`,
+    `Relationship with SCD` = `What is your relationship with SCD?`,
+    `Genotype` = `What is the genotype of you or your relative?`,
+    `Heard of new treatments` = `Have you heard of any emerging or new treatment options for Sickle cell disease?
+`,
+    `Stay up-to-date` = `How do you stay up-to-date with the latest advances in sickle cell disease and treatments? Please tick all that applies`,
+    `Excited about new treatments` = `Are you excited by the recent new treatments for SCD treatment?`,
+    `Barriers to accessing treatments` = `Which of the following are the barriers to accessing new treatments for sickle cell in Nigeria?`,
+    `Confidence in knowledge` = `On a scale of 1 to 5, how confident are you in your knowledge about emerging treatments for Sickle cell disease?`,
+    `Focus of future research` = `What aspect of sickle cell do you think future research should focus on? (Please tick all that applies)`,
+    `Concerns about new treatments` = `What are your main concerns around new  SCD treatments?`,
+    `Accessibility of treatments` = `Do you believe that new treatments for SCD are accessible for Nigerian patients?`,
+     `Consent_form`=`Please confirm that you consent to participate in this survey by selecting “Yes” below`,
+     `Familiarity with ffg treatment?`= `Which of the following new sickle cell treatment options are you familiar with? Please tick all that applies.`,
+     `Willingness to receive update?`= `Do you want to be informed of new breakthroughs in SCD treatments even though they are not available in Nigeria?`,
+`Why would you use new treatment`= `What factors would inform your decision to use any of the new treatments?`
+  )
+
+import_data_2 <- import_data %>% select(Gender,`Relationship with SCD`,Genotype,`Heard of new treatments`,`Accessibility of treatments`,`Stay up-to-date`) %>% head(10)
+```
+
+
+```{r}
+#The first row calculation
+# Calculate the count for each gender
+male_count <- import_data %>%
+  count(Gender) %>%
+  filter(Gender == "Male")%>%
+  pull(n)
+
+female_count <- import_data %>%
+  count(Gender) %>%
+  filter(Gender == "Female")%>%
+  pull(n)
+
+I_have_scd<-import_data %>% count(`Relationship with SCD`) %>%
+  filter(`Relationship with SCD`=="I have SCD") %>% pull()
+
+Family_scd<-import_data %>% count(`Relationship with SCD`) %>%
+  filter(`Relationship with SCD`=="I have a family member or child with SCD") %>% pull()
+
+```
+
+
+```{r echo=FALSE}
+#The second row calculation
+
+# Rename admin1Name to states
+nigeria$states <- nigeria$admin1Name
+
+# Create a data frame for scores, including all states
+scores <- data.frame(
+  states = c("Kebbi", "Zamfara", "Bauchi", "Oyo", "Borno", "Kogi", "Imo", "Abia", 
+             "Rivers", "Lagos", "Yobe", "Edo", "Anambra", "Ogun", "Kano", "Jigawa", 
+             "Katsina", "Sokoto", "Federal Capital Territory", "Adamawa", "Kwara", "Ekiti", "Ondo", 
+             "Delta", "Cross River", "Bayelsa", "Benue", "Taraba", "Akwa Ibom", 
+             "Enugu", "Gombe", "Nasarawa", "Niger", "Osun", "Plateau", "Kaduna", "Ebonyi"),
+  score = c(62, 63, 61, 60, 5, 7, 8, 9, 6, 8, 12, 15, 17, 18, 22, 25, 27, 28, 
+            24, 20, 21, 23, 25, 22, 28, 34, 36, 38, 40, 45, 43, 41, 42, 39, 44, 26, 35)
+)
+
+# Assigning colors based on score ranges
+nigeria$color_group <- cut(
+  scores$score[match(nigeria$states, scores$states)], # Match scores to states
+  breaks = c(0, 9, 19, 29, 39, 49, 64),
+  labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%", "60-64%"),
+  include.lowest = TRUE
+)
+
+# Define custom color scale
+color_scale <- scale_fill_manual(
+  values = c("0-9%" = "#416D45", "10-19%" = "#4682B4", "20-29%" = "#A79C21", 
+             "30-39%" = "#7F87C1", "40-49%" = "#957478", "60-64%" = "#C04444"),
+  guide = guide_legend(title = NULL)
+)
+
+# Plot
+my_plot <- ggplot() +
+  geom_sf(data = nigeria, aes(fill = color_group), color = "black") +
+  geom_sf_label(
+    data = nigeria,
+    aes(label = states),
+    color = "black", fill = "white", size = 2.8, label.padding = unit(0.1, "lines")
+  ) +
+  color_scale +
+  theme_minimal() +
+  labs(
+    title = "",
+    subtitle = "",
+    caption = "Malaria indicator survey, 2015"
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    legend.position = "right",
+    legend.text = element_text(size = 7),  # Adjust legend text size
+    plot.title = element_text(color = "#402AA4", face = "italic", hjust = 1, size = 10),
+    plot.subtitle = element_text(color = "#66496B", face = "bold.italic", size = 7),
+    plot.caption = element_text(color = "#3E4567", face = "italic", hjust = 1, size = 6)
+  ) +
+  coord_sf(lims_method = "geometry_bbox") 
+
+```
+
+
+```{r}
+#The third row calculation
+mycolors <- c("#B89B31", "#1D5B79", "#B04759", 
+               "#5D9C59",  "#704573",  "#353A7B", "#B89B31")
+Excitment<-import_data %>% 
+  filter(!is.na(`Excited about new treatments`)) %>%
+  count(`Excited about new treatments`
+  ) %>% 
+  mutate(percentage = n / sum(n) * 100)
+
+# Plot data
+plot2<-plot_ly(Excitment, labels = ~`Excited about new treatments`, 
+        values = ~n, marker = list(colors = mycolors)) %>% 
+  add_pie(hole = 0.4) %>%
+  layout(showlegend = FALSE)
+
+```
+
+
+```{r}
+#FOUTH CALCULATION
+
+mycolors <- c("#B89B31", "#1D5B79", "#B04759", 
+               "#5D9C59",  "#704573",  "#353A7B", "#B89B31")
+# Define the specific categories
+categories <- c(
+  "Complications eg leg ulcers, stroke and AVN",
+  "Cures and curative treatments",
+  "Genetics and inheritance of sickle",
+  "Genetics and inheritance of sickle, Vaso occlusive crisis and emergencies",
+  "Pain and pain management",
+  "Organ Damage",
+  "Mental health and psychological effects of SCD"
+)
+
+# Create a new column to categorize the responses
+categorized_data <- import_data %>%
+  filter(!is.na(`Focus of future research`)) %>%
+  mutate(Future_research_SCD = case_when(
+    `Focus of future research` %in% categories ~ 
+      `Focus of future research`,
+    TRUE ~ "Others"
+  ))%>%
+  group_by(Future_research_SCD) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / sum(count) * 100)
+
+# Plot data
+Future_research<-plot_ly(categorized_data, labels = ~Future_research_SCD, 
+        values = ~count, marker = list(colors = mycolors)) %>% 
+  add_pie(hole = 0.4) %>%
+  layout(showlegend = FALSE)
+
+#AGE DISTRIBUTION
+
+Age_data<-import_data %>%
+  group_by(`Age range`) %>%
+  summarise(count = n())
+  
+  
+age_distribution <- plot_ly(Age_data, 
+        x = ~`Age range`, 
+        y = ~count, 
+        type = 'bar', 
+        marker = list(color = mycolors),
+        text = ~count, 
+        textposition = 'outside') %>%
+  layout(title = '',
+         xaxis = list(title = 'Age', showgrid = FALSE),
+         yaxis = list(title = 'Count', showgrid = FALSE),
+         plot_bgcolor = '#ffffff',
+         paper_bgcolor = '#ffffff')
+
+
+
+#GENOTYPE
+genotype <- import_data %>% 
+  count(`Genotype`) %>% 
+  mutate(percentage = n / sum(n) * 100) %>% flextable()
+```
+
+
+# HOME
+
+## Row 1 {height=20%}
+```{r}
+value_box(
+  title = "Male",
+  value = male_count,
+  showcase = bsicons::bs_icon("gender-male"),
+  theme = value_box_theme(bg = "#58173C"))
+```
+
+```{r}
+value_box(
+  title = "Female",
+  value = female_count,
+  showcase = bsicons::bs_icon("gender-female"),
+  theme = value_box_theme(bg = "#3F1758"))
+```
+
+```{r}
+value_box(
+  title = "I have SCD",
+  value = I_have_scd,
+  showcase = bsicons::bs_icon("bag-heart"),
+  theme = value_box_theme(bg = "#17583C")
+)
+```
+
+```{r}
+value_box(
+  title = "I have SCDP family",
+  value = Family_scd,
+  showcase = bsicons::bs_icon("house-heart-fill"),
+  theme = value_box_theme(bg = "#4D5817")
+)
+```
+
+## Row 2 {height=80%}
+
+### {width=60%}
+
+```{r title = "Malaria Map for Children 6 to 59 Months of Age"}
+my_plot
+```
+
+### {width=40%}
+
+```{r title = "Excited about new treatments for SCD"}
+plot2
+```
+
+# FUTURE RESEARCH
+
+## Row 1 {height=55%}
+
+```{r title = "Future Research"}
+Future_research
+```
+
+## {.sidebar width=20%}
+
+Future research topics related to sickle cell disease (SCD), we can explore several important areas based on the data provided:
+
+### 1. Complications of SCD
+Complications such as leg ulcers, stroke, and avascular necrosis (AVN) are significant challenges for individuals with SCD. Research could focus on:
+
+- **Prevention Strategies**: Investigating interventions to reduce the incidence of complications.
+- **Treatment Innovations**: Developing new therapies or improving existing ones to manage and mitigate these complications effectively.
+
+### 2. Cures and Curative Treatments
+While bone marrow transplants offer a potential cure for some individuals with severe SCD, more accessible and universally applicable curative treatments are needed. Research in this area might include:
+
+- **Gene Therapy**: Advancing gene editing techniques to correct the genetic mutation causing SCD.
+- **Stem Cell Research**: Exploring new approaches using stem cells for curative purposes.
+
+### 3. Genetics and Inheritance of SCD
+Understanding the genetic basis and inheritance patterns of SCD is crucial. Research topics could involve:
+
+- **Genetic Modifiers**: Identifying genetic factors that influence disease severity and progression.
+- **Population Studies**: Examining how genetic variations impact different populations and their susceptibility to SCD complications.
+
+### 4. Mental Health and Psychological Effects
+SCD not only affects physical health but also has profound psychological impacts. Areas for research include:
+
+- **Psychosocial Interventions**: Developing tailored support programs for individuals and families affected by SCD.
+- **Quality of Life**: Assessing the long-term psychological effects and quality of life outcomes in SCD patients.
+
+### 5. Organ Damage
+SCD can lead to progressive damage in various organs. Research directions could include:
+
+- **Organ-Specific Studies**: Investigating mechanisms of organ damage and potential therapeutic targets.
+- **Early Detection**: Developing biomarkers or imaging techniques for early detection and intervention.
+
+### 6. Pain and Pain Management
+Pain is a hallmark of SCD and significantly impacts quality of life. Research avenues might include:
+
+- **Pain Mechanisms**: Understanding the underlying mechanisms of pain in SCD.
+- **Personalized Pain Management**: Tailoring pain management strategies based on genetic, demographic, and clinical factors.
+
+### Age Range Distribution
+Based on the provided data, age ranges of individuals affected by SCD vary widely, suggesting the need for age-specific research and interventions.
+
+### Genotype Distribution
+The distribution of genotypes (SS, SC, AS, etc.) influences disease severity and outcomes, highlighting the importance of genotype-specific research and personalized medicine approaches.
+
+By addressing these research topics comprehensively, we can advance our understanding of SCD, improve patient outcomes, and move closer to finding effective cures and management strategies for this challenging disease.
+
+## Row 2 {height=45%}
+
+### {width=80%}
+```{r title = "Age Distribution"}
+age_distribution
+```
+
+### {width=20%}
+```{r title = "Genotype"}
+genotype
+```
+
+
+# DOWNLOAD DATA
+
+The first 10 rows of the data used in this dashboard is shown below and can be downloaded as a csv
+
+```{r}
+htmltools::browsable(
+  tagList(
+    reactable(import_data_2,
+              elementId = "import_data_table",
+              searchable = TRUE,
+              filterable = TRUE),
+    tags$button("Download as CSV",
+                onclick = "Reactable.downloadDataCSV('import_data_2')")
+  )
+)
+
+```
+
+
+# ABOUT 
+
+This data comes from '*a survey conducted to check the awareness and novel treatment of SCD*' 
+
+Nigeria leads the world in the number of SCD cases. Approximately 150,000 babies are born annually with SCD in Nigeria. Sadly, 70-90% of affected infants die before reaching age 5. Nigerian SCD patients face staggering healthcare costs, with monthly expenses ranging from N70,000 to N1,000,0003. Up to 650 children die per day in sub-Saharan Africa from SCD1.*{Arwa et al., 2019}*
+
+A video speaking to the what you need to know by 'CMs' is shown below:
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/qK5H9fPkltc?si=GJAiNaKKPDm1Ybzr" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
