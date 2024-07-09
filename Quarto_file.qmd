@@ -207,8 +207,7 @@ age_distribution <- plot_ly(Age_data,
         y = ~count, 
         type = 'bar', 
         marker = list(color = mycolors),
-        text = ~count, 
-        textposition = 'outside') %>%
+        hoverinfo = 'y') %>%
   layout(title = '',
          xaxis = list(title = 'Age', showgrid = FALSE),
          yaxis = list(title = 'Count', showgrid = FALSE),
